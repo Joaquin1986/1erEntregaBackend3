@@ -1,6 +1,5 @@
 // Se definen los modulos a importar
 const express = require('express');
-const path = require('path');
 const cookieParser = require('cookie-parser');
 const passport = require('./passport/passport');
 
@@ -9,6 +8,8 @@ const cartsApiRouter = require('./routes/api/carts.api.router');
 const sessionsApiRouter = require('./routes/api/sessions.api.router');
 const mocksApiRouter = require('./routes/api/mocks.api.router');
 const petsApiRouter = require('./routes/api/pets.api.router');
+const notFound404 = require('./middleware/notFound404');
+const errorHandler = require('./middleware/errorHandler');
 
 const { publicPath } = require("./utils/utils");
 
@@ -19,31 +20,18 @@ const app = express();
 
 initServer(app).then(() => {
     connectMongoDB();
-
-    app.use(express.static(publicPath))
-    app.use(express.json());
-    app.use(express.urlencoded({ extended: true }));
-    app.use(cookieParser());
-
-    app.use('/api', productsApiRouter);
-    app.use('/api', cartsApiRouter);
-    app.use('/api', sessionsApiRouter);
-    app.use('/api/mocks', mocksApiRouter);
-    app.use('/api', petsApiRouter);
-
-    app.use(("*", (req, res, next) => {
-        const errorPath = path.join(__dirname, req.originalUrl);
-        const message = `⛔ Error 404: Sitio no encontrado (${errorPath})`;
-        console.error(message);
-        res.status(404).json({ message });
-    }));
-
-    app.use((error, req, res, next) => {
-        const message = `⛔ Petición incorrecta: ${error.message}`;
-        console.error(message);
-        res.status(400).json({ message });
-    });
-
+    app
+        .use(express.static(publicPath))
+        .use(express.json())
+        .use(express.urlencoded({ extended: true }))
+        .use(cookieParser())
+        .use('/api', productsApiRouter)
+        .use('/api', cartsApiRouter)
+        .use('/api', sessionsApiRouter)
+        .use('/api/mocks', mocksApiRouter)
+        .use('/api', petsApiRouter)
+        .use('*', notFound404)
+        .use(errorHandler);
 });
 
 module.exports = app;
